@@ -1,0 +1,2 @@
+# Web demo only (on top of the core inference requirements.txt).
+flask>=3.0

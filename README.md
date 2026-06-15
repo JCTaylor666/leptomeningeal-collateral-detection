@@ -1,0 +1,145 @@
+# LMC — Leptomeningeal Collateral Detection on DSA
+
+Inference code for *Leptomeningeal Collateral Detection on DSA via
+Vessel-Graph Neural Networks* (MIUA 2026).
+
+<p align="center">
+  <img src="demo/demo.gif" alt="LMC live inference demo — drag a DSA frame and watch each pipeline stage render" width="850">
+</p>
+
+<p align="center"><em>Interactive web demo — each stage renders live as it is computed. See <a href="demo/README.md">demo/</a>.</em></p>
+
+Feed a single 2D DSA frame; the pipeline predicts a vessel mask, builds a
+vessel-segment graph, and outputs a collateral probability for every
+vessel segment (graph node).
+
+## Pipeline
+
+```
+raw DSA frame (PNG, 2D grayscale)
+  │
+  ▼  vessel segmentation   ── DIAS-trained 5-fold nnU-Net + clDice
+binary vessel mask
+  │
+  ▼  graph construction    ── line-graph: nodes = vessel segments
+graph (nodes: bbox / center_proj / pixels / adjacency)
+  ├─► graph branch   ── DINOv3 ViT-L/16 (frozen) + GAT          → p_gnn
+  └─► pixel branch   ── vessel-masked 5-fold nnU-Net + node-mean → p_nn
+  │
+  ▼  fusion   p_fuse = λ·p_gnn + (1−λ)·p_nn   (λ = 0.77)
+per-node collateral probability
+```
+
+## Setup
+
+```bash
+# 1. Environment (conda; tested with CUDA 12.1 / torch 2.3).
+conda env create -f environment.yml
+conda activate lmc
+pip install -r requirements.txt
+
+# 2. Local clone of the DINOv3 source repo (for the ViT-L/16 backbone):
+git clone https://github.com/facebookresearch/dinov3 /path/to/dinov3
+export LMC_DINOV3_REPO=/path/to/dinov3        # or pass --dino_repo_dir
+
+# 3. Place the pretrained checkpoints under ckpt/ (see ckpt/README.md).
+```
+
+## Run
+
+```bash
+python scripts/infer_one.py \
+    --image examples/sample_frame/s50_f12.png \
+    --output_dir out/s50_f12 \
+    --threshold 0.5
+```
+
+Outputs (under `--output_dir`):
+
+- `<caseid>_pred.json` — per-node probabilities (`p_gnn`, `p_nn`,
+  `p_fuse`, `hard_pred`) plus bounding box and pixel count.
+- `<caseid>_overlay.png` — DSA frame with predicted collateral nodes highlighted.
+- `<caseid>_vessel_mask.png` — predicted binary vessel mask.
+- `<caseid>_graph_pred.json` — full predicted graph topology.
+
+Single-fold inference (skip the 5-fold ensemble):
+
+```bash
+python scripts/infer_one.py --image ... --output_dir ... --mode fold:0
+```
+
+For the full I/O schemas see [`docs/io_formats.md`](docs/io_formats.md).
+
+A reference overlay for the bundled frame is provided at
+`examples/s50_f12_expected_overlay.png`.
+
+## Interactive demo (web UI)
+
+The repo also ships a browser-based visualization of the full pipeline.
+Drag a DSA frame into the page, press **Start**, and every stage renders as
+soon as it is computed — vessel mask → graph → masked input → pixel / graph
+branches → fusion → collateral decision — streamed live to an animated
+pipeline diagram.
+
+```bash
+pip install -r demo/requirements.txt          # adds flask
+export LMC_DINOV3_REPO=/path/to/dinov3         # same as CLI inference
+python demo/app.py                             # → http://127.0.0.1:5000
+```
+
+It reuses the exact same runners as `scripts/infer_one.py` — no retraining,
+no extra weights. See **[`demo/README.md`](demo/README.md)** for the full
+deployment guide (port options, remote / SSH / VSCode forwarding, GPU notes,
+and troubleshooting).
+
+## Model
+
+- Backbone: DINOv3 ViT-L/16 (LVD-1689M), frozen.
+- Graph branch: GAT, 2 layers, hidden dim 128; ROI-Align features + bbox H/W.
+- Pixel branch: 2D nnU-Net on vessel-masked frames, pooled to nodes.
+- Fusion weight: λ = 0.77.
+
+## Checkpoints
+
+| Subdir | Contents |
+|---|---|
+| `ckpt/dinov3/`              | DINOv3 ViT-L/16 LVD-1689M weights |
+| `ckpt/vessel_seg_nnunet/`   | 5 folds × `checkpoint_best.pth` (DIAS, clDice) |
+| `ckpt/pixel_branch_nnunet/` | 5 folds × `checkpoint_best_prauc.pth` (vessel-masked) |
+| `ckpt/graph_branch_gat/`    | 5 folds × `fold{i}_best_prauc.pt` |
+
+See [`ckpt/README.md`](ckpt/README.md) for details; `scripts/download_ckpts.sh`
+is the (to-be-wired) artefact-store download helper.
+
+## Layout
+
+```
+public_repo/
+├── scripts/
+│   ├── infer_one.py              single-frame inference CLI
+│   └── download_ckpts.sh         checkpoint download helper
+├── src/lmc/
+│   ├── inference/                end-to-end runner (vessel → graph → branches → fusion)
+│   ├── preprocess/mask_to_graph.py   line-graph construction
+│   └── graph_branch/{backbone,model}.py   DINOv3 + GAT
+├── configs/inference_default.yaml
+├── ckpt/                         pretrained weights (see ckpt/README.md)
+├── demo/                         interactive web UI (Flask + HTML); see demo/README.md
+├── examples/
+│   ├── sample_frame/s50_f12.png
+│   └── s50_f12_expected_overlay.png
+├── docs/io_formats.md
+└── tests/test_smoke.py
+```
+
+## License / citation
+
+See `LICENSE`. Cite as:
+
+```bibtex
+@inproceedings{lmc_miua2026,
+  title     = {Leptomeningeal Collateral Detection on DSA via Vessel-Graph Neural Networks},
+  booktitle = {Medical Image Understanding and Analysis (MIUA)},
+  year      = {2026}
+}
+```

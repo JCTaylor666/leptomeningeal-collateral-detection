@@ -1,0 +1,20 @@
+# Pretrained weights — large (~10.5 GB), distributed separately.
+# See ckpt/README.md for how to obtain them.
+ckpt/*
+!ckpt/README.md
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.ipynb_checkpoints/
+
+# Demo runtime
+demo/server.log
+
+# Scratch inference outputs (the bundled output/ example IS tracked)
+out/
+
+# OS / editor cruft
+.DS_Store
+*.swp

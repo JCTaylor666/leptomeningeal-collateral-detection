@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>LMC · Leptomeningeal Collateral Detection — live inference</title>
+<link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">
+    <span class="dot"></span>
+    <strong>LMC</strong> Leptomeningeal Collateral Detection
+    <span class="sub">DSA → vessel graph → fusion · live pipeline</span>
+  </div>
+  <a class="paper" href="#" title="MIUA 2026">MIUA 2026</a>
+</header>
+
+<main class="layout">
+  <!-- ----------------------------- LEFT PANEL ----------------------------- -->
+  <aside class="panel">
+    <h2>1 · Input DSA frame</h2>
+    <div id="drop" class="dropzone">
+      <div class="dz-inner">
+        <svg viewBox="0 0 24 24" width="34" height="34" aria-hidden="true">
+          <path fill="currentColor" d="M19 13v6H5v-6H3v8h18v-8h-2zM11 4v8.17l-2.59-2.58L7 11l5 5 5-5-1.41-1.41L13 12.17V4h-2z"/>
+        </svg>
+        <p>Drag &amp; drop a DSA frame<br /><small>or click to browse · PNG / JPG</small></p>
+      </div>
+      <img id="preview" alt="" />
+      <input id="file" type="file" accept="image/*" hidden />
+    </div>
+
+    <h2>2 · Parameters</h2>
+    <label class="ctl">
+      <span>Fusion weight λ <em id="lamVal">0.77</em></span>
+      <input id="lam" type="range" min="0" max="1" step="0.01" value="0.77" />
+      <small>p_fuse = λ·p_gnn + (1−λ)·p_nn</small>
+    </label>
+    <label class="ctl">
+      <span>Decision threshold τ <em id="thrVal">0.50</em></span>
+      <input id="thr" type="range" min="0" max="1" step="0.01" value="0.50" />
+    </label>
+
+    <button id="start" class="start" disabled>▶ Start inference</button>
+    <p class="hint">5-fold ensemble — first run loads ~11&nbsp;GB of weights and may take a few minutes; later runs are faster.</p>
+
+    <div id="summary" class="summary" hidden>
+      <h2>Result</h2>
+      <div class="kv"><span>Nodes</span><b id="sNodes">–</b></div>
+      <div class="kv"><span>Collateral (≥ τ)</span><b id="sPos">–</b></div>
+      <div class="kv"><span>λ / τ</span><b id="sParams">–</b></div>
+    </div>
+
+    <div class="legend">
+      <span>low</span><img id="cbar" alt="probability colorbar" /><span>high</span>
+    </div>
+    <div id="log" class="log"></div>
+  </aside>
+
+  <!-- --------------------------- PIPELINE CANVAS --------------------------- -->
+  <section class="canvas" id="canvas">
+    <svg id="wires" class="wires"></svg>
+
+    <div class="grid">
+      <!-- column 1 -->
+      <div class="col c1">
+        <div class="card" id="card-input" data-step="input">
+          <div class="card-h"><span class="tag">DSA</span><span class="state"></span></div>
+          <div class="thumb"><span class="ph">input frame</span></div>
+          <div class="cap"></div>
+        </div>
+      </div>
+      <!-- column 2 -->
+      <div class="col c2">
+        <div class="card" id="card-vessel_seg" data-step="vessel_seg">
+          <div class="card-h"><span class="tag">Vessel Seg</span><span class="state"></span></div>
+          <div class="thumb"><span class="ph">nnU-Net + clDice</span></div>
+          <div class="cap"></div>
+        </div>
+      </div>
+      <!-- column 3 (split) -->
+      <div class="col c3 split">
+        <div class="card" id="card-graph" data-step="graph">
+          <div class="card-h"><span class="tag">Graph Build</span><span class="state"></span></div>
+          <div class="thumb"><span class="ph">line-graph</span></div>
+          <div class="cap"></div>
+        </div>
+        <div class="card" id="card-masked" data-step="masked">
+          <div class="card-h"><span class="tag">Masked DSA</span><span class="state"></span></div>
+          <div class="thumb"><span class="ph">image × mask</span></div>
+          <div class="cap"></div>
+        </div>
+      </div>
+      <!-- column 4 (split) -->
+      <div class="col c4 split">
+        <div class="card module" id="card-graph_branch" data-step="graph_branch">
+          <div class="card-h"><span class="tag">Graph Branch · GNN</span><span class="state"></span></div>
+          <div class="thumb"><span class="ph">DINOv3 ViT-L/16 + GAT → p_gnn</span></div>
+          <div class="cap"></div>
+        </div>
+        <div class="card module" id="card-pixel_branch" data-step="pixel_branch">
+          <div class="card-h"><span class="tag">Pixel Branch</span><span class="state"></span></div>
+          <div class="thumb"><span class="ph">vessel-masked nnU-Net → p_nn</span></div>
+          <div class="cap"></div>
+        </div>
+      </div>
+      <!-- column 5 -->
+      <div class="col c5">
+        <div class="card" id="card-fusion" data-step="fusion">
+          <div class="card-h"><span class="tag">Fusion</span><span class="state"></span></div>
+          <div class="thumb"><span class="ph">λ-blend</span></div>
+          <div class="cap"></div>
+        </div>
+      </div>
+      <!-- column 6 -->
+      <div class="col c6">
+        <div class="card final" id="card-result" data-step="result">
+          <div class="card-h"><span class="tag">Result</span><span class="state"></span></div>
+          <div class="thumb"><span class="ph">collateral decision</span></div>
+          <div class="cap"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script src="/static/app.js"></script>
+</body>
+</html>

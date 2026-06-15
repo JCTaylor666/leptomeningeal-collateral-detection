@@ -1,0 +1,33 @@
+# Conda env for LMC public-repo single-frame inference.
+# Tested with NVIDIA A100 (CUDA 12.1). Adjust torch / dgl wheels for your CUDA.
+#
+# Usage:
+#   conda env create -f environment.yml
+#   conda activate lmc
+#   pip install -r requirements.txt          # for the few pip-only deps
+#
+name: lmc
+channels:
+  - pytorch
+  - nvidia
+  - conda-forge
+dependencies:
+  - python=3.10
+  - pip
+  - pytorch=2.3.1
+  - pytorch-cuda=12.1
+  - torchvision
+  - numpy
+  - pillow
+  - pyyaml
+  - tqdm
+  - scikit-image=0.25.*
+  - scikit-learn
+  - scipy
+  - networkx=3.4.*
+  - pandas
+  - matplotlib
+  - pip:
+      - dgl==2.5.0+cu121
+      - --find-links https://data.dgl.ai/wheels/torch-2.3/cu121/repo.html
+      - nnunetv2

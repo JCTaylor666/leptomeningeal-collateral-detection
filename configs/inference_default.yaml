@@ -1,0 +1,24 @@
+# Default inference configuration for the LMC public repo.
+# All paths are resolved RELATIVE to the repo root (where this file lives
+# under configs/). Override on the CLI via --opt key=value.
+
+ckpt_root: ckpt
+# Path to a local clone of the DINOv3 source repository (https://github.com/facebookresearch/dinov3).
+# Required at runtime so the ViT-L/16 backbone can be constructed via `dinov3.hub.backbones`.
+#
+# Resolution order (in order of precedence):
+#   1. CLI flag         : --dino_repo_dir /path/to/dinov3
+#   2. Environment var  : LMC_DINOV3_REPO=/path/to/dinov3
+#   3. This config value (placeholder by default — overwrite for your machine).
+dino_repo_dir: /path/to/dinov3
+
+# Fusion weight λ  (p_fuse = λ·p_gnn + (1−λ)·p_nn). Paper value.
+nnunet_lambda: 0.77
+
+# Folds used for the 5-fold ensemble.
+folds: [0, 1, 2, 3, 4]
+
+device: cuda
+amp: true
+
+# Hard-decision threshold τ is set on the CLI via --threshold (default 0.5).

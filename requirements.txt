@@ -1,0 +1,31 @@
+# Pip-installable dependencies for LMC inference.
+# For a full conda environment see environment.yml; this file is the
+# minimal pip-only install path on top of an existing torch/cuda setup.
+#
+# Required: a working PyTorch >= 2.3 with CUDA 12.1 already installed.
+# Required: a local clone of https://github.com/facebookresearch/dinov3
+#           (its path is supplied at runtime via --dino_repo_dir or the
+#           LMC_DINOV3_REPO environment variable).
+
+numpy
+Pillow
+PyYAML
+tqdm
+scikit-image>=0.25
+scikit-learn
+scipy
+networkx>=3.4
+pandas
+matplotlib
+
+# torchvision (graph branch uses torchvision.ops.roi_align). Must match your
+# installed torch; for torch 2.3.1 this resolves to torchvision 0.18.1.
+torchvision
+
+# DGL (graph branch: GCN/GAT/GIN layers). Tested wheel for torch 2.3 / CUDA 12.1.
+# For a different CUDA build, change the +cu121 tag and the find-links URL
+# (see https://www.dgl.ai/pages/start.html).
+--find-links https://data.dgl.ai/wheels/torch-2.3/cu121/repo.html
+dgl==2.5.0+cu121
+
+nnunetv2
