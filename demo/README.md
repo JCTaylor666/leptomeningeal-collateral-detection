@@ -105,7 +105,7 @@ If the browser runs on the **same machine** as the server, just open:
 http://127.0.0.1:5000
 ```
 
-Drop in `examples/sample_frame/s50_f12.png`, optionally tweak λ / τ, and press
+Drop in `examples/sample_frame/aaaaaa.png`, optionally tweak λ / τ, and press
 **▶ Start inference**.
 
 ---

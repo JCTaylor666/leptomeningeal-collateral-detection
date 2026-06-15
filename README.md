@@ -52,8 +52,8 @@ bash scripts/download_ckpts.sh                # -> ckpt/  (~3.5 GB, public)
 
 ```bash
 python scripts/infer_one.py \
-    --image examples/sample_frame/s50_f12.png \
-    --output_dir out/s50_f12 \
+    --image examples/sample_frame/aaaaaa.png \
+    --output_dir out/aaaaaa \
     --threshold 0.5
 ```
 
@@ -72,9 +72,6 @@ python scripts/infer_one.py --image ... --output_dir ... --mode fold:0
 ```
 
 For the full I/O schemas see [`docs/io_formats.md`](docs/io_formats.md).
-
-A reference overlay for the bundled frame is provided at
-`examples/s50_f12_expected_overlay.png`.
 
 ## Interactive demo (web UI)
 
@@ -134,8 +131,7 @@ public_repo/
 ├── ckpt/                         pretrained weights (see ckpt/README.md)
 ├── demo/                         interactive web UI (Flask + HTML); see demo/README.md
 ├── examples/
-│   ├── sample_frame/s50_f12.png
-│   └── s50_f12_expected_overlay.png
+│   └── sample_frame/aaaaaa.png
 ├── docs/io_formats.md
 └── tests/test_smoke.py
 ```

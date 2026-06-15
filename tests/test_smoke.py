@@ -22,20 +22,20 @@ import tempfile
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-EXAMPLE = REPO_ROOT / "examples" / "sample_frame" / "s50_f12.png"
+EXAMPLE = REPO_ROOT / "examples" / "sample_frame" / "aaaaaa.png"
 
 EXPECTED_OUTPUTS = [
-    "s50_f12_pred.json",
-    "s50_f12_overlay.png",
-    "s50_f12_vessel_mask.png",
-    "s50_f12_graph_pred.json",
+    "aaaaaa_pred.json",
+    "aaaaaa_overlay.png",
+    "aaaaaa_vessel_mask.png",
+    "aaaaaa_graph_pred.json",
 ]
 
 
 def test_infer_one_smoke() -> None:
     assert EXAMPLE.is_file(), f"missing example frame: {EXAMPLE}"
     with tempfile.TemporaryDirectory(prefix="lmc_smoke_") as tmp:
-        out_dir = Path(tmp) / "s50_f12"
+        out_dir = Path(tmp) / "aaaaaa"
         cmd = [
             sys.executable,
             str(REPO_ROOT / "scripts" / "infer_one.py"),
