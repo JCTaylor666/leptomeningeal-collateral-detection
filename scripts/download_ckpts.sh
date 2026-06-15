@@ -1,64 +1,53 @@
 #!/usr/bin/env bash
-# Download pretrained LMC checkpoints into ckpt/.
+# Download the LMC checkpoints from the HuggingFace Hub into ckpt/.
 #
-# TODO(maintainers): replace the URL placeholders below with the real
-# HuggingFace Hub / Zenodo / GitHub-Release-Asset URLs once the artefact
-# upload is finalised. Until that is done, copy ckpt/ from the private
-# tree manually.
+# Source (public, no token needed):
+#   https://huggingface.co/cjy666/lmc-ckpt
+#     vessel_seg_nnunet/   pixel_branch_nnunet/   graph_branch_gat/
 #
-# Expected layout produced by this script:
-#   ckpt/
-#     dinov3/dinov3_vitl16_pretrain_lvd1689m-8aa4cbdd.pth
-#     vessel_seg_nnunet/{plans.json,dataset.json,fold_{0..4}/checkpoint_best.pth}
-#     pixel_branch_nnunet/{plans.json,dataset.json,fold_{0..4}/checkpoint_best_prauc.pth}
-#     graph_branch_gat/{train_config.json,fold{0..4}_best_prauc.pt}
+# NOT included (gated): the DINOv3 ViT-L/16 backbone. You must request
+# access from Meta and place the weights yourself — see the end of this
+# script and ckpt/README.md.
 #
-# Total size: ~11 GB. Make sure you have the disk space and network
-# bandwidth before running.
+# Layout produced under ckpt/:
+#   vessel_seg_nnunet/{plans.json,dataset.json,fold_{0..4}/checkpoint_best.pth}
+#   pixel_branch_nnunet/{plans.json,dataset.json,fold_{0..4}/checkpoint_best_prauc.pth}
+#   graph_branch_gat/{train_config.json,fold{0..4}_best_prauc.pt}
+#   dinov3/dinov3_vitl16_pretrain_lvd1689m-8aa4cbdd.pth   <-- YOU add this (gated)
+#
+# Download size from HF: ~3.5 GB.
 
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 CKPT_DIR="${REPO_ROOT}/ckpt"
+HF_REPO="cjy666/lmc-ckpt"
+
 mkdir -p "${CKPT_DIR}"
 
-# === REPLACE THESE WITH THE REAL HOSTED-ARCHIVE URL ============================
-# Single tarball is recommended (one resumable download, simple checksum).
-ARCHIVE_URL="https://example.invalid/lmc_ckpts_v1.tar.gz"     # TODO
-ARCHIVE_SHA256="REPLACE_ME_WITH_REAL_SHA256_HASH"             # TODO
-# ==============================================================================
+echo "[download_ckpts] Downloading ${HF_REPO} -> ${CKPT_DIR}"
 
-echo "[download_ckpts] Target: ${CKPT_DIR}"
-echo "[download_ckpts] Source: ${ARCHIVE_URL}"
+# huggingface_hub is the only requirement; install if missing.
+python -c "import huggingface_hub" 2>/dev/null || pip install -U "huggingface_hub>=0.23"
 
-if [[ "${ARCHIVE_URL}" == https://example.invalid/* ]]; then
-    cat <<'EOF' >&2
+# Robust across huggingface_hub versions; public repo => anonymous download.
+python - "${HF_REPO}" "${CKPT_DIR}" <<'PY'
+import sys
+from huggingface_hub import snapshot_download
+repo, dst = sys.argv[1], sys.argv[2]
+snapshot_download(repo_id=repo, repo_type="model", local_dir=dst)
+print("[download_ckpts] snapshot complete")
+PY
 
-ERROR: download_ckpts.sh is a stub.
+cat <<EOF
 
-The artefact-store URL has not been wired up yet. Until the maintainers
-upload the checkpoints to a public host (HuggingFace Hub / Zenodo / GitHub
-Release Assets) and update this script, copy ckpt/ from your private
-working tree manually, e.g.:
+[download_ckpts] Done — vessel / pixel / graph checkpoints are in ${CKPT_DIR}.
 
-    rsync -av --progress /path/to/private/ckpt/ ./ckpt/
-
-Then re-run inference.
-
+NEXT (required): the DINOv3 backbone is GATED and is NOT distributed here.
+  1. Request access to & download the 'dinov3_vitl16_pretrain_lvd1689m'
+     (ViT-L/16, LVD-1689M) weights from:
+         https://github.com/facebookresearch/dinov3
+  2. Place the file at (exact name, with the -8aa4cbdd hash suffix):
+         ${CKPT_DIR}/dinov3/dinov3_vitl16_pretrain_lvd1689m-8aa4cbdd.pth
+  3. Clone the DINOv3 source repo and point LMC_DINOV3_REPO at it (see README).
 EOF
-    exit 1
-fi
-
-TMP_TAR="$(mktemp -t lmc_ckpts.XXXXXX.tar.gz)"
-trap 'rm -f "${TMP_TAR}"' EXIT
-
-curl -L --fail --progress-bar -o "${TMP_TAR}" "${ARCHIVE_URL}"
-
-echo "[download_ckpts] Verifying SHA-256 ..."
-echo "${ARCHIVE_SHA256}  ${TMP_TAR}" | sha256sum --check --quiet
-
-echo "[download_ckpts] Extracting to ${CKPT_DIR} ..."
-tar -xzf "${TMP_TAR}" -C "${CKPT_DIR}" --strip-components=1
-
-echo "[download_ckpts] Done. Layout:"
-find "${CKPT_DIR}" -maxdepth 2 -type d | sort

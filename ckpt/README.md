@@ -1,12 +1,25 @@
 # `ckpt/` — pretrained weights
 
-All weights needed by `scripts/infer_one.py`. Total ~11 GB.
+Weights needed by `scripts/infer_one.py`. Everything except the DINOv3
+backbone is hosted publicly on the HuggingFace Hub; the DINOv3 backbone is
+gated and must be obtained from Meta separately.
+
+## Download
+
+```bash
+# vessel / pixel / graph checkpoints (~3.5 GB, public, no token):
+bash scripts/download_ckpts.sh
+#   -> https://huggingface.co/cjy666/lmc-ckpt  into  ckpt/
+```
+
+Then add the **gated** DINOv3 ViT-L/16 backbone yourself (see
+[DINOv3 backbone](#dinov3-backbone-gated) below).
 
 ## Contents
 
 ```
 ckpt/
-├── dinov3/
+├── dinov3/                                                 NOT on HF — gated, you add it
 │   └── dinov3_vitl16_pretrain_lvd1689m-8aa4cbdd.pth         1.2 GB   ViT-L/16 LVD-1689M backbone
 │
 ├── vessel_seg_nnunet/                                       Sec 4.2: DIAS-trained vessel mask
@@ -21,33 +34,32 @@ ckpt/
 │
 └── graph_branch_gat/                                        Sec 4.3: DINOv3 + GAT
     ├── train_config.json
-    └── fold{0..4}_best_prauc.pt                   5×1.2 GB  exp_00167 best-PRAUC selection
+    └── fold{0..4}_best_prauc.pt                   5×3.6 MB  GAT heads only (see note)
 ```
+
+> **Graph-branch checkpoints are DINOv3-free.** The GAT head is only ~3.6 MB;
+> the frozen DINOv3 backbone is loaded separately from `ckpt/dinov3/` at
+> runtime (and is intentionally stripped from these checkpoints so the gated
+> backbone is never redistributed). Inference is bit-identical either way.
+
+## DINOv3 backbone (gated)
+
+The DINOv3 weights are **not** redistributed here. To get them:
+
+1. Request access to and download `dinov3_vitl16_pretrain_lvd1689m`
+   (ViT-L/16, LVD-1689M) from <https://github.com/facebookresearch/dinov3>.
+2. Place the file at `ckpt/dinov3/dinov3_vitl16_pretrain_lvd1689m-8aa4cbdd.pth`.
+   The DINOv3 hub loader requires the 8-character hash suffix (`-8aa4cbdd`,
+   the canonical LVD-1689M hash); the inference config points directly at this
+   filename — **no symlink or alias is created** at load time.
+3. Clone the DINOv3 source repo and export `LMC_DINOV3_REPO` (see the top-level
+   README).
 
 ## Provenance
 
-Trained checkpoints are copied verbatim from:
-
-| File group | Source path |
+| File group | Source |
 |---|---|
-| `dinov3/` | DINOv3 official LVD-1689M ViT-L/16 release |
+| `dinov3/` | DINOv3 official LVD-1689M ViT-L/16 release (gated; user-obtained) |
 | `vessel_seg_nnunet/fold_*/checkpoint_best.pth` | Dataset501_DIASVessel, trainer `nnUNetTrainerClDice2D` |
 | `pixel_branch_nnunet/fold_*/checkpoint_best_prauc.pth` | Dataset708_ZurichCollateralCVMasked_EVEN, trainer `nnUNetTrainerPRAUC2D` |
-| `graph_branch_gat/fold*_best_prauc.pt` | exp_00167_2045694, batch BATCH1 |
-
-## DINOv3 weights filename
-
-The DINOv3 hub loader requires the weights file to be named with an
-8-character hash suffix (e.g. `*-8aa4cbdd.pth`; `8aa4cbdd` is the
-canonical LVD-1689M hash). We therefore ship the single real weights
-file already named `dinov3_vitl16_pretrain_lvd1689m-8aa4cbdd.pth`, and
-the inference config points directly at it — **no symlink or alias is
-created** at load time.
-
-## Public-release notes
-
-- Total size (~11 GB) exceeds typical git limits. For public release,
-  host these on a dedicated artefact store (HuggingFace Hub / Zenodo /
-  GitHub Release Assets) and use `scripts/download_ckpts.sh` (currently
-  a stub — fill in the artefact URL and SHA-256) to pull the same
-  layout.
+| `graph_branch_gat/fold*_best_prauc.pt` | exp_00167_2045694, batch BATCH1 (GAT head, DINOv3 stripped) |

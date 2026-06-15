@@ -42,7 +42,10 @@ pip install -r requirements.txt
 git clone https://github.com/facebookresearch/dinov3 /path/to/dinov3
 export LMC_DINOV3_REPO=/path/to/dinov3        # or pass --dino_repo_dir
 
-# 3. Place the pretrained checkpoints under ckpt/ (see ckpt/README.md).
+# 3. Download the checkpoints (vessel / pixel / graph) from the HF Hub:
+bash scripts/download_ckpts.sh                # -> ckpt/  (~3.5 GB, public)
+#    Then add the GATED DINOv3 backbone yourself (see ckpt/README.md):
+#    place dinov3_vitl16_pretrain_lvd1689m-8aa4cbdd.pth under ckpt/dinov3/
 ```
 
 ## Run
@@ -101,15 +104,20 @@ and troubleshooting).
 
 ## Checkpoints
 
-| Subdir | Contents |
-|---|---|
-| `ckpt/dinov3/`              | DINOv3 ViT-L/16 LVD-1689M weights |
-| `ckpt/vessel_seg_nnunet/`   | 5 folds × `checkpoint_best.pth` (DIAS, clDice) |
-| `ckpt/pixel_branch_nnunet/` | 5 folds × `checkpoint_best_prauc.pth` (vessel-masked) |
-| `ckpt/graph_branch_gat/`    | 5 folds × `fold{i}_best_prauc.pt` |
+Hosted publicly at **[`cjy666/lmc-ckpt`](https://huggingface.co/cjy666/lmc-ckpt)**
+(~3.5 GB) and fetched by `scripts/download_ckpts.sh`:
 
-See [`ckpt/README.md`](ckpt/README.md) for details; `scripts/download_ckpts.sh`
-is the (to-be-wired) artefact-store download helper.
+| Subdir | Contents | Source |
+|---|---|---|
+| `ckpt/vessel_seg_nnunet/`   | 5 folds × `checkpoint_best.pth` (DIAS, clDice) | HF Hub |
+| `ckpt/pixel_branch_nnunet/` | 5 folds × `checkpoint_best_prauc.pth` (vessel-masked) | HF Hub |
+| `ckpt/graph_branch_gat/`    | 5 folds × `fold{i}_best_prauc.pt` (GAT head, ~3.6 MB) | HF Hub |
+| `ckpt/dinov3/`              | DINOv3 ViT-L/16 LVD-1689M backbone | **gated — obtain from [Meta](https://github.com/facebookresearch/dinov3)** |
+
+The DINOv3 backbone is **not** redistributed (gated license); the graph-branch
+checkpoints ship the GAT head only, with the frozen backbone stripped — it is
+loaded from `ckpt/dinov3/` at runtime (inference is bit-identical). See
+[`ckpt/README.md`](ckpt/README.md) for the full layout and the DINOv3 steps.
 
 ## Layout
 
