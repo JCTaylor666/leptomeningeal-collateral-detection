@@ -141,9 +141,13 @@ public_repo/
 See `LICENSE`. Cite as:
 
 ```bibtex
-@inproceedings{lmc_miua2026,
-  title     = {Leptomeningeal Collateral Detection on DSA via Vessel-Graph Neural Networks},
-  booktitle = {Medical Image Understanding and Analysis (MIUA)},
-  year      = {2026}
+@misc{cao2026leptomeningealcollateraldetectiondsa,
+      title={Leptomeningeal Collateral Detection on DSA via Vessel-Graph Neural Networks},
+      author={Junyong Cao and Hakim Baazaoui and Chinmay Prabhakar and Suprosanna Shit and Lukas Bastian Otto and Susanne Wegener and Bjoern Menze and Ezequiel de la Rosa},
+      year={2026},
+      eprint={2606.14828},
+      archivePrefix={arXiv},
+      primaryClass={eess.IV},
+      url={https://arxiv.org/abs/2606.14828},
 }
 ```
